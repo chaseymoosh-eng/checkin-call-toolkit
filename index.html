@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check-in Call Toolkit</title>
+<meta name="description" content="A free volunteer check-in call toolkit to reduce loneliness. The organizer app keeps all data on your device.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231f4f99'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f7f5f0; --card:#ffffff; --text:#1d2433; --muted:#4a5568; --line:#d6d3cc;
+  --primary:#1f4f99; --primary-d:#163a73; --primary-l:#e6eefb;
+  --bad:#b3261e; --bad-l:#fde9e7;
+  --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box}
+html{font-size:112.5%;color-scheme:light}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+a{color:var(--primary)}
+.skip{position:absolute;left:-999px;top:0;background:#000;color:#fff;padding:.5rem 1rem;z-index:100}
+.skip:focus{left:.5rem}
+:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+header{background:var(--primary);color:#fff;padding:1rem}
+.topbar{max-width:880px;margin:0 auto}
+.brand{font-weight:700;font-size:1.25rem}
+.brand small{display:block;font-weight:400;font-size:.9rem;opacity:.95;margin-top:.15rem}
+main{max-width:880px;margin:0 auto;padding:1.25rem 1rem 2rem}
+h1{font-size:1.85rem;line-height:1.25;margin:.2rem 0 .6rem}
+h2{font-size:1.35rem;margin:1.8rem 0 .6rem}
+p{margin:.6rem 0}
+.lead{font-size:1.15rem;margin-top:0}
+.cta{margin:1.1rem 0 1.4rem}
+.btn{font:inherit;font-size:1.2rem;font-weight:700;min-height:56px;padding:.85rem 1.4rem;border-radius:12px;border:2px solid var(--primary);background:var(--primary);color:#fff;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;text-align:center}
+.btn:hover{background:var(--primary-d);border-color:var(--primary-d)}
+.btn.secondary{background:#fff;color:var(--primary);font-size:1rem;font-weight:600;min-height:48px;padding:.55rem 1rem}
+.btn.secondary:hover{background:var(--primary-l)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem;box-shadow:var(--shadow);margin:.75rem 0}
+.note{background:var(--primary-l);border:1px solid #b9cdf0;border-radius:var(--radius);padding:.9rem 1rem}
+.crisis{background:var(--bad-l);border:3px solid var(--bad);border-radius:var(--radius);padding:1rem 1.1rem}
+.crisis h2{color:var(--bad);margin-top:0}
+.lines{list-style:none;padding:0;margin:.4rem 0 0}
+.lines li{padding:.45rem 0;border-bottom:1px dashed #e5b4ae}
+.lines li:last-child{border-bottom:none}
+.lines a{font-weight:700}
+.downloads{display:grid;gap:.75rem}
+.download h3{margin:.1rem 0 .35rem;font-size:1.1rem}
+.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem}
+.shots{display:grid;gap:1rem;grid-template-columns:1.35fr .75fr;align-items:start}
+.shots figure{margin:0}
+.shots img{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:#fff;display:block}
+.shots figcaption{color:var(--muted);font-size:.92rem;margin-top:.4rem}
+footer{max-width:880px;margin:0 auto;padding:1rem;color:var(--muted);font-size:.92rem;border-top:1px solid var(--line)}
+footer p{margin:.4rem 0}
+.small{font-size:.92rem;color:var(--muted)}
+@media (max-width:720px){
+  html{font-size:106%}
+  h1{font-size:1.6rem}
+  .btn{width:100%}
+  .shots{grid-template-columns:1fr}
+  .actions .btn{width:auto;flex:1}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header>
+  <div class="topbar">
+    <div class="brand">Check-in Call Toolkit<small>Friendly volunteer phone calls. Not therapy or a crisis service.</small></div>
+  </div>
+</header>
+<main id="main">
+  <h1>A free toolkit for volunteer check-in phone calls</h1>
+  <p class="lead">Help a small group stay in touch with people who feel lonely or isolated. This toolkit is free to use: an organizer app, a volunteer training guide, and a coordinator setup guide.</p>
+  <p class="cta"><a class="btn" href="app/index.html">Open the app</a></p>
+
+  <section class="card" aria-labelledby="what">
+    <h2 id="what">What this is</h2>
+    <p>The Check-in Call Toolkit is a free volunteer check-in call toolkit to reduce loneliness. It is based on a 2021 <cite>JAMA Psychiatry</cite> trial of phone calls by trained volunteers (Kahlon et al.). In that randomized trial, briefly trained callers phoned 240 Meals on Wheels clients for four weeks, listened with empathy, and let the person lead the conversation. People who received the calls were less lonely, less depressed, and less anxious than people who did not.</p>
+    <p>It is meant for small charities, community groups, faith groups, libraries, and neighbour networks. Volunteers make short, regular calls. A coordinator keeps the schedule, the training, and any concerns.</p>
+    <p class="small">Kahlon MK, Aksan N, Aubrey R, et al. <cite>JAMA Psychiatry</cite>. 2021;78(6):616–622. <a href="https://doi.org/10.1001/jamapsychiatry.2021.0113">doi:10.1001/jamapsychiatry.2021.0113</a></p>
+  </section>
+
+  <section class="crisis" aria-labelledby="not-therapy">
+    <h2 id="not-therapy">This is not therapy or a crisis service</h2>
+    <p>The calls are a friendly chat with a trained volunteer. They are <strong>not therapy, counselling, or a crisis service</strong>. If someone is in immediate danger, call the local emergency number.</p>
+    <p>If someone needs a crisis line:</p>
+    <ul class="lines">
+      <li><a href="tel:988">988</a> — United States: 988 Suicide &amp; Crisis Lifeline. Call or text, 24/7.</li>
+      <li><a href="tel:116123">116 123</a> — United Kingdom and Ireland: Samaritans. Free to call, 24/7.</li>
+      <li><a href="https://findahelpline.com">findahelpline.com</a> — local helplines elsewhere.</li>
+    </ul>
+  </section>
+
+  <section class="note" aria-labelledby="privacy">
+    <h2 id="privacy">Privacy</h2>
+    <p>Data stays on the user's device. The app saves names, phone numbers, and call notes in the browser's localStorage. <strong>Nothing is sent anywhere.</strong> There is no account, no server, and no analytics. Use a password-protected device, and export a backup from Settings when you want a copy. Clearing browser data, or using a private window, erases the records.</p>
+  </section>
+
+  <section aria-labelledby="guides">
+    <h2 id="guides">Guides</h2>
+    <div class="downloads">
+      <article class="card download">
+        <h3>Volunteer training guide</h3>
+        <p>For people making the calls: what the program is and is not, how to listen, sample scripts, and the crisis protocol. The last page is a one-page card to keep by the phone.</p>
+        <div class="actions">
+          <a class="btn secondary" href="guide/volunteer-training-guide.pdf">Download PDF</a>
+          <a class="btn secondary" href="guide/volunteer-training-guide.md">Download Markdown</a>
+        </div>
+      </article>
+      <article class="card download">
+        <h3>Coordinator setup guide</h3>
+        <p>How to start a program in a few weeks: who it is for, consent, matching, a two-hour training session, and how to use the app.</p>
+        <div class="actions">
+          <a class="btn secondary" href="guide/coordinator-setup-guide.pdf">Download PDF</a>
+          <a class="btn secondary" href="guide/coordinator-setup-guide.md">Download Markdown</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="look">
+    <h2 id="look">A look at the app</h2>
+    <p>Upcoming calls are built from the pairings you enter. Today is highlighted. Overdue calls are marked so they are easy to follow up. The layout stays usable on a phone.</p>
+    <div class="shots">
+      <figure>
+        <img src="screenshots/01-upcoming.png" width="1280" height="800" alt="Upcoming calls screen with today's calls highlighted in yellow and one overdue call marked in red.">
+        <figcaption>Upcoming calls on a computer. Today is highlighted, and an overdue call stands out.</figcaption>
+      </figure>
+      <figure>
+        <img src="screenshots/13-mobile-upcoming.png" width="390" height="844" alt="The upcoming calls screen on a phone, with large buttons and the same call list.">
+        <figcaption>The same screen on a phone.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="license">
+    <h2 id="license">License</h2>
+    <p><strong>Code</strong> (the app, the tests, the PDF build script, and this page's markup) is <a href="LICENSE">MIT</a>. Copyright 2026 chaseymoosh-eng.</p>
+    <p><strong>Guides and other written content</strong> are <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 (CC BY 4.0)</a>. See <a href="LICENSE-content">LICENSE-content</a>. You may share and adapt them if you give credit.</p>
+  </section>
+</main>
+<footer>
+  <p><strong>Friendly calls, not therapy, counselling, or an emergency service.</strong> If someone is in danger, call the local emergency number. In the US call or text 988. In the UK and Ireland call Samaritans on 116 123. Elsewhere, use <a href="https://findahelpline.com">findahelpline.com</a>.</p>
+  <p>Data stays in this browser. Nothing is sent anywhere.</p>
+</footer>
+</body>
+</html>

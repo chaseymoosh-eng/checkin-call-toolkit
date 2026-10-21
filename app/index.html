@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check-in Call Toolkit</title>
+<meta name="description" content="A simple, offline tool for running volunteer check-in phone calls. Data stays on this device.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231f4f99'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f7f5f0; --card:#ffffff; --text:#1d2433; --muted:#4a5568; --line:#d6d3cc;
+  --primary:#1f4f99; --primary-d:#163a73; --primary-l:#e6eefb;
+  --ok:#17663a; --ok-l:#e3f4e9; --warn:#8a5a00; --warn-l:#fff4d6;
+  --bad:#b3261e; --bad-l:#fde9e7; --today:#fff6c9; --today-b:#b88a00;
+  --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box}
+html{font-size:112.5%}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+a{color:var(--primary)}
+.skip{position:absolute;left:-999px;top:0;background:#000;color:#fff;padding:.5rem 1rem;z-index:100}
+.skip:focus{left:.5rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+header{background:var(--primary);color:#fff;padding:.6rem 1rem .2rem}
+.topbar{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;max-width:1200px;margin:0 auto}
+.brand{font-weight:700;font-size:1.15rem;flex:1;min-width:12rem}
+.brand small{display:block;font-weight:400;font-size:.8rem;opacity:.9}
+.crisis-btn{background:#fff !important;color:var(--bad) !important;border:2px solid #fff !important;font-weight:700}
+nav{max-width:1200px;margin:.4rem auto 0;display:flex;gap:.25rem;overflow-x:auto;scrollbar-width:thin}
+nav a{color:#fff;text-decoration:none;padding:.55rem .8rem;border-radius:10px 10px 0 0;white-space:nowrap;font-weight:600;font-size:.95rem}
+nav a:hover{background:rgba(255,255,255,.15)}
+nav a[aria-current="page"]{background:var(--bg);color:var(--primary)}
+nav .badge{background:var(--bad);color:#fff;border-radius:999px;padding:0 .45rem;font-size:.75rem;margin-left:.25rem}
+main{max-width:1200px;margin:0 auto;padding:1rem}
+footer{max-width:1200px;margin:2rem auto;padding:1rem;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line)}
+h1{font-size:1.5rem;margin:.3rem 0 1rem}
+h2{font-size:1.2rem;margin:1.5rem 0 .6rem}
+h3{font-size:1.05rem;margin:.2rem 0 .4rem}
+:not(button).small{font-size:.85rem;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow);margin-bottom:.75rem}
+.grid{display:grid;gap:.75rem;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.stats{display:grid;gap:.75rem;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-bottom:1rem}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:.8rem 1rem}
+.stat .num{font-size:1.8rem;font-weight:700;line-height:1.1}
+.stat .lab{font-size:.85rem;color:var(--muted)}
+.stat.bad{border-color:var(--bad);background:var(--bad-l)}
+.stat.warn{border-color:var(--warn);background:var(--warn-l)}
+button,.btn{font:inherit;font-size:.95rem;font-weight:600;min-height:44px;padding:.5rem 1rem;border-radius:10px;border:2px solid var(--primary);background:var(--primary);color:#fff;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.35rem}
+button:hover,.btn:hover{background:var(--primary-d)}
+button.secondary,.btn.secondary{background:#fff;color:var(--primary)}
+button.secondary:hover{background:var(--primary-l)}
+button.danger{background:#fff;color:var(--bad);border-color:var(--bad)}
+button.danger:hover{background:var(--bad-l)}
+button.small{min-height:36px;padding:.25rem .7rem;font-size:.85rem}
+.toolbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+.toolbar .spacer{flex:1}
+.chip{display:inline-block;border-radius:999px;padding:.05rem .6rem;font-size:.8rem;font-weight:600;border:1px solid currentColor;white-space:nowrap}
+.chip.ok{color:var(--ok);background:var(--ok-l)}
+.chip.warn{color:var(--warn);background:var(--warn-l)}
+.chip.bad{color:var(--bad);background:var(--bad-l)}
+.chip.info{color:var(--primary);background:var(--primary-l)}
+.chip.muted{color:var(--muted);background:#f1f0ec}
+.day-h{display:flex;align-items:baseline;gap:.5rem;margin:1.2rem 0 .4rem;font-size:1.05rem;flex-wrap:wrap}
+.slot{display:flex;gap:.8rem;align-items:center;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--primary);border-radius:var(--radius);padding:.7rem .9rem;margin-bottom:.5rem;flex-wrap:wrap}
+.slot.today{background:var(--today);border-left-color:var(--today-b)}
+.slot.overdue{background:var(--bad-l);border-left-color:var(--bad)}
+.slot.done{border-left-color:var(--ok)}
+.slot-time{font-weight:700;min-width:5.5rem}
+.slot-main{flex:1;min-width:12rem}
+.slot-act{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+.urgent-banner{background:var(--bad);color:#fff;padding:1rem}
+.urgent-banner .inner{max-width:1200px;margin:0 auto}
+.urgent-banner button{background:#fff;color:var(--bad);border-color:#fff}
+.crisis{background:var(--bad-l);border:3px solid var(--bad);border-radius:var(--radius);padding:1rem;color:var(--text)}
+.crisis h3{color:var(--bad);font-size:1.15rem}
+.crisis ol{padding-left:1.3rem;margin:.3rem 0}
+.crisis li{margin-bottom:.4rem}
+.urgent-banner .crisis{margin-top:.6rem}
+.lines{list-style:none;padding:0;margin:.3rem 0}
+.lines li{padding:.3rem 0;border-bottom:1px dashed #e5b4ae}
+.lines a{font-weight:700;font-size:1.1rem;color:var(--bad)}
+.note{background:var(--primary-l);border:1px solid #b9cdf0;border-radius:var(--radius);padding:.8rem 1rem;margin:0 0 1rem;display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap}
+.note p{margin:0;flex:1;min-width:14rem}
+.note.warn{background:var(--warn-l);border-color:#e6c46c}
+.row{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;align-items:flex-start}
+.kv{margin:.2rem 0;font-size:.92rem}
+.kv b{color:var(--muted);font-weight:600}
+.actions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem}
+table{border-collapse:collapse;width:100%;background:var(--card);font-size:.92rem}
+th,td{text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#efede7}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:1rem}
+dialog{border:none;border-radius:16px;padding:0;width:min(680px,96vw);max-height:92vh;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(20,25,35,.55)}
+.dlg-head{position:sticky;top:0;background:var(--card);padding:1rem 1.2rem .5rem;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:2}
+.dlg-head h2{margin:0}
+.dlg-body{padding:1rem 1.2rem}
+.dlg-foot{position:sticky;bottom:0;background:var(--card);padding:.8rem 1.2rem;border-top:1px solid var(--line);display:flex;gap:.5rem;justify-content:flex-end}
+.field{margin-bottom:.9rem}
+.field label,.field legend{font-weight:600;display:block;margin-bottom:.2rem}
+.field .help{margin:.1rem 0 .3rem;font-size:.85rem;color:var(--muted)}
+input[type=text],input[type=tel],input[type=email],input[type=date],input[type=time],input[type=number],select,textarea{font:inherit;width:100%;padding:.55rem .65rem;border:2px solid #8a93a3;border-radius:8px;background:#fff;color:var(--text);min-height:44px}
+textarea{resize:vertical}
+fieldset{border:none;padding:0;margin:0}
+.radios{display:flex;flex-wrap:wrap;gap:.4rem}
+label.radio,label.check{display:inline-flex !important;align-items:center;gap:.4rem;font-weight:500 !important;border:2px solid #c8ccd4;border-radius:10px;padding:.35rem .7rem;min-height:44px;cursor:pointer;background:#fff}
+label.radio:has(input:checked),label.check:has(input:checked){border-color:var(--primary);background:var(--primary-l)}
+input[type=radio],input[type=checkbox]{width:1.2rem;height:1.2rem;accent-color:var(--primary)}
+[hidden]{display:none !important}
+.empty{text-align:center;padding:2rem 1rem;color:var(--muted)}
+.empty ol{text-align:left;display:inline-block}
+#toast{position:fixed;left:50%;bottom:1rem;transform:translateX(-50%);background:#1d2433;color:#fff;padding:.7rem 1.2rem;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:1000;max-width:92vw}
+#toast.show{opacity:1}
+#toast.err{background:var(--bad)}
+.line-row{display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:.4rem;margin-bottom:.4rem}
+@media (max-width:640px){
+  html{font-size:106%}
+  .line-row{grid-template-columns:1fr}
+  main{padding:.75rem}
+  .slot-act{width:100%}
+  .slot-act button{flex:1}
+}
+@media print{
+  header nav,.toolbar button,.actions,.slot-act button,footer,.note,.crisis-btn,.urgent-banner{display:none !important}
+  header{background:#fff;color:#000}
+  .slot{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header>
+  <div class="topbar">
+    <div class="brand"><span id="orgName">Check-in Calls</span><small>Check-in Call Toolkit · friendly calls, not a therapy or crisis service</small></div>
+    <button class="crisis-btn" data-action="show-crisis" type="button">⚠️ Crisis protocol</button>
+  </div>
+  <nav id="nav" aria-label="Main sections"></nav>
+</header>
+<div id="urgentBanner" class="urgent-banner" role="alert" hidden></div>
+<main id="main" tabindex="-1"></main>
+<footer>
+  <p><strong>This is a friendly-call program, not therapy, counselling or an emergency service.</strong> Volunteers offer a listening ear. If someone is in danger, call your local emergency number.</p>
+  <p>🔒 Data is stored only in this browser on this device (localStorage). Nothing is sent anywhere. Use a password-protected device and export backups regularly. Clearing your browser data will erase it.</p>
+  <p>Loneliness check uses the 3-item UCLA Loneliness Scale (Hughes, Waite, Hawkley &amp; Cacioppo, <em>Research on Aging</em>, 2004). Call approach inspired by Kahlon et al., <em>JAMA Psychiatry</em>, 2021.</p>
+</footer>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form id="dlgForm" novalidate>
+    <div class="dlg-head"><h2 id="dlgTitle">Form</h2><button type="button" class="secondary small" data-action="close-dlg" aria-label="Close">✕</button></div>
+    <div class="dlg-body" id="dlgBody"></div>
+    <div class="dlg-foot"><button type="button" class="secondary" data-action="close-dlg">Cancel</button><button type="submit" id="dlgSubmit">Save</button></div>
+  </form>
+</dialog>
+
+<dialog id="crisisDlg" aria-labelledby="crisisTitle">
+  <div class="dlg-head"><h2 id="crisisTitle">Crisis protocol</h2><button type="button" class="secondary small" data-action="close-crisis" aria-label="Close">✕</button></div>
+  <div class="dlg-body" id="crisisBody"></div>
+  <div class="dlg-foot"><button type="button" data-action="close-crisis">Close</button></div>
+</dialog>
+
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<datalist id="tzlist"></datalist>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+/* ===================== Constants ===================== */
+const KEY = 'checkinToolkit.v1';
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAY_ORDER = [1,2,3,4,5,6,0];
+const MOODS = {1:'😟 Very low',2:'🙁 Low',3:'😐 Okay',4:'🙂 Good',5:'😄 Very good'};
+const OUTCOMES = {completed:'Completed',no_answer:'No answer',rescheduled:'Rescheduled'};
+const CONCERNS = {none:'None','follow-up':'Follow-up needed',urgent:'Urgent'};
+const UCLA_ITEMS = ['How often do you feel that you lack companionship?','How often do you feel left out?','How often do you feel isolated from others?'];
+const UCLA_OPTS = [['1','Hardly ever'],['2','Some of the time'],['3','Often']];
+const LOCAL_TZ = (()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(e){return '';}})();
+const VIEWS = [
+  ['upcoming','Upcoming calls'],['log','Call log'],['concerns','Concerns'],
+  ['participants','Participants'],['volunteers','Volunteers'],['pairings','Pairings'],
+  ['stats','Stats'],['settings','Settings & data']
+];
+
+function defaultSettings(){
+  return {
+    orgName:'', coordinatorName:'', coordinatorPhone:'', coordinatorEmail:'', safeguardingContact:'',
+    emergencyNote:'Call your local emergency number (for example 911 in the US and Canada, 999 in the UK, 112 across the EU).',
+    crisisLines:[
+      {label:'United States: 988 Suicide & Crisis Lifeline', number:'988', note:'Call or text, 24/7'},
+      {label:'UK & Ireland: Samaritans', number:'116 123', note:'Free to call, 24/7'},
+      {label:'Anywhere else', number:'', note:'Find free local helplines at findahelpline.com'}
+    ],
+    privacyDismissed:false, lastExport:''
+  };
+}
+function emptyData(){return {version:1, settings:defaultSettings(), volunteers:[], participants:[], pairings:[], calls:[], oneOffs:[], ucla:[]};}
+
+/* ===================== Storage ===================== */
+function normalize(o){
+  const d = emptyData();
+  if(!o || typeof o!=='object') return d;
+  for(const k of ['volunteers','participants','pairings','calls','oneOffs','ucla']) d[k] = Array.isArray(o[k]) ? o[k].filter(x=>x && typeof x==='object') : [];
+  d.settings = Object.assign(defaultSettings(), (o.settings && typeof o.settings==='object') ? o.settings : {});
+  if(!Array.isArray(d.settings.crisisLines)) d.settings.crisisLines = defaultSettings().crisisLines;
+  return d;
+}
+function load(){
+  try{ const raw = localStorage.getItem(KEY); return raw ? normalize(JSON.parse(raw)) : emptyData(); }
+  catch(e){ console.warn('Could not load data', e); return emptyData(); }
+}
+let D = load();
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(D)); return true; }
+  catch(e){ toast('Could not save. Browser storage may be full or blocked. Export a backup now.', true); return false; }
+}
+
+/* ===================== Helpers ===================== */
+const $ = s => document.querySelector(s);
+function esc(v){return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function uid(){return Date.now().toString(36) + Math.random().toString(36).slice(2,8);}
+const pad = n => String(n).padStart(2,'0');
+function ds(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function parseD(s){const [y,m,d] = String(s).split('-').map(Number); return new Date(y, (m||1)-1, d||1);}
+function today(){return ds(new Date());}
+function nowTime(){const d=new Date(); return pad(d.getHours())+':'+pad(d.getMinutes());}
+function addDays(s,n){const d=parseD(s); d.setDate(d.getDate()+n); return ds(d);}
+function dow(s){return parseD(s).getDay();}
+function diffDays(a,b){return Math.round((parseD(b)-parseD(a))/86400000);}
+function isDate(s){return /^\d{4}-\d{2}-\d{2}$/.test(String(s||''));}
+function fmtDate(s, long){ if(!isDate(s)) return s||''; return parseD(s).toLocaleDateString(undefined, long?{weekday:'long',day:'numeric',month:'long'}:{weekday:'short',day:'numeric',month:'short'}); }
+function fmtTime(t){ if(!/^\d{1,2}:\d{2}/.test(t||'')) return ''; const [h,m]=t.split(':').map(Number); const d=new Date(); d.setHours(h,m,0,0); return d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); }
+function theirTime(date, time, tz){
+  if(!tz || !time || tz===LOCAL_TZ) return '';
+  try{ const [h,m]=time.split(':').map(Number); const d=parseD(date); d.setHours(h,m,0,0);
+    return d.toLocaleString(undefined,{timeZone:tz, weekday:'short', hour:'numeric', minute:'2-digit'}) + ' their time';
+  }catch(e){ return ''; }
+}
+function weekStart(s){ return addDays(s, -((dow(s)+6)%7)); }
+function telHref(n){ return 'tel:' + String(n||'').replace(/[^\d+]/g,''); }
+function telLink(n){ return n ? `<a href="${esc(telHref(n))}">${esc(n)}</a>` : ''; }
+const vol = id => D.volunteers.find(v=>v.id===id);
+const par = id => D.participants.find(p=>p.id===id);
+const pairing = id => D.pairings.find(p=>p.id===id);
+const vName = id => vol(id)?.name || 'Unknown volunteer';
+const pName = id => par(id)?.name || 'Unknown participant';
+const isOpenConcern = c => c.concernLevel && c.concernLevel!=='none' && !c.resolved;
+let toastTimer;
+function toast(msg, err){ const t=$('#toast'); t.textContent=msg; t.className='show'+(err?' err':''); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='', err?6000:3000); }
+function download(name, text, type){
+  const blob = new Blob([text], {type}); const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();}, 1000);
+}
+function hasData(){ return D.volunteers.length || D.participants.length || D.pairings.length || D.calls.length; }
+
+/* ===================== Schedule ===================== */
+function scheduleText(p){
+  const days = DAY_ORDER.filter(d => (p.days||[]).map(Number).includes(d)).map(d=>DAYS[d]).join(' & ') || 'no days set';
+  const every = Number(p.interval)===2 ? 'Every other' : 'Every';
+  return `${every} ${days}${p.time ? ' at '+fmtTime(p.time) : ''}`;
+}
+function slotsBetween(from, to){
+  const out = [];
+  for(const p of D.pairings){
+    if(p.active === false) continue;
+    const pt = par(p.participantId); if(!pt || pt.status !== 'active') continue;
+    const days = (p.days||[]).map(Number); if(!days.length || !isDate(p.startDate)) continue;
+    const start = from < p.startDate ? p.startDate : from;
+    const end = (isDate(p.endDate) && p.endDate < to) ? p.endDate : to;
+    const wk0 = weekStart(p.startDate);
+    for(let d = start; d <= end; d = addDays(d,1)){
+      if(!days.includes(dow(d))) continue;
+      if(Number(p.interval)===2 && Math.floor(diffDays(wk0,d)/7) % 2) continue;
+      out.push({key:p.id+'|'+d, pairingId:p.id, date:d, time:p.time||'', participantId:p.participantId, volunteerId:p.volunteerId, oneOff:false});
+    }
+  }
+  for(const o of D.oneOffs){
+    if(!isDate(o.date) || o.date < from || o.date > to) continue;
+    const pt = par(o.participantId); if(!pt || pt.status !== 'active') continue;
+    out.push({key:'o|'+o.id, pairingId:o.pairingId, date:o.date, time:o.time||'', participantId:o.participantId, volunteerId:o.volunteerId, oneOff:true});
+  }
+  out.sort((a,b)=>(a.date+(a.time||'99')).localeCompare(b.date+(b.time||'99')));
+  return out;
+}
+const callForSlot = key => D.calls.find(c=>c.slotKey===key);
+function nextCallFor(p){ const s = slotsBetween(today(), addDays(today(),60)).find(x=>x.pairingId===p.id && !callForSlot(x.key)); return s ? fmtDate(s.date)+(s.time?' '+fmtTime(s.time):'') : '—'; }
+let slotIndex = {};
+
+/* ===================== Crisis protocol ===================== */
+function crisisHTML(){
+  const s = D.settings;
+  const coord = [s.coordinatorName ? esc(s.coordinatorName) : 'your coordinator (add their contact details in Settings)', s.coordinatorPhone ? telLink(s.coordinatorPhone) : '', s.coordinatorEmail ? `<a href="mailto:${esc(s.coordinatorEmail)}">${esc(s.coordinatorEmail)}</a>` : ''].filter(Boolean).join(' · ');
+  const lines = (s.crisisLines||[]).filter(l=>l.label||l.number||l.note).map(l=>{
+    const note = esc(l.note||'').replace('findahelpline.com','<a href="https://findahelpline.com" target="_blank" rel="noopener">findahelpline.com</a>');
+    return `<li>${esc(l.label)}${l.number?': '+telLink(l.number):''}${note?` <span class="small">${note}</span>`:''}</li>`;
+  }).join('');
+  return `<div class="crisis">
+  <h3>⚠️ Urgent concern: what to do now</h3>
+  <ol>
+    <li><strong>Is anyone in immediate danger?</strong> (injured, has taken something, or about to harm themselves or someone else) → ${esc(s.emergencyNote)} Give their name and address. Stay on the line with them if you can.</li>
+    <li><strong>Talking about suicide or not wanting to live?</strong> Stay calm and stay with them. It is OK to ask directly: <em>"Are you thinking about ending your life?"</em> Listen without judging. Encourage them to call a crisis line now, or offer to help them make the call. Don't promise to keep it secret.</li>
+    <li><strong>Tell the coordinator straight away</strong>, even if things seem calmer: ${coord}.${s.safeguardingContact?` <br>Safeguarding contact: ${esc(s.safeguardingContact)}`:''}</li>
+    <li><strong>Write down what happened</strong>: what was said, the time, and what you did. Stick to facts.</li>
+  </ol>
+  <h3 style="margin-top:.6rem">Crisis lines</h3>
+  <ul class="lines">${lines || '<li>No crisis lines set. Add local numbers in Settings.</li>'}</ul>
+  <p class="small" style="margin:.3rem 0 0">Numbers are set by your coordinator in Settings. If they are still the examples, replace them with services in your area.</p>
+</div>`;
+}
+function renderBanner(){
+  const urgent = D.calls.filter(c=>c.concernLevel==='urgent' && !c.resolved);
+  const b = $('#urgentBanner');
+  if(!urgent.length){ b.hidden = true; b.innerHTML=''; return; }
+  b.hidden = false;
+  b.innerHTML = `<div class="inner"><div class="row"><div><strong style="font-size:1.15rem">🚨 ${urgent.length} urgent concern${urgent.length>1?'s':''} open:</strong> ${urgent.map(c=>esc(pName(c.participantId))).join(', ')}. Follow the crisis protocol and make sure the coordinator knows.</div>
+  <div><button type="button" data-action="goto" data-view="concerns">View concerns</button></div></div>${crisisHTML()}</div>`;
+}
+
+/* ===================== Forms ===================== */
+function fieldHTML(f, v){
+  const id = 'f_'+f.name;
+  const req = f.required ? ' required aria-required="true"' : '';
+  const help = f.help ? `<p class="help" id="${id}_h">${f.help}</p>` : '';
+  const desc = f.help ? ` aria-describedby="${id}_h"` : '';
+  const show = f.showIf ? ` data-show-if='${esc(JSON.stringify(f.showIf))}'` : '';
+  const label = esc(f.label) + (f.required ? ' <span aria-hidden="true">*</span>' : '');
+  let inner;
+  switch(f.type){
+    case 'html': return `<div class="field"${show}>${f.html}</div>`;
+    case 'textarea': inner = `<label for="${id}">${label}</label>${help}<textarea id="${id}" name="${f.name}" rows="${f.rows||3}"${req}${desc}>${esc(v)}</textarea>`; break;
+    case 'checkbox': inner = `<label class="check"><input type="checkbox" id="${id}" name="${f.name}"${v?' checked':''}${desc}> ${esc(f.label)}</label>${help}`; break;
+    case 'select': inner = `<label for="${id}">${label}</label>${help}<select id="${id}" name="${f.name}"${req}${desc}>${f.options.map(([val,lab])=>`<option value="${esc(val)}"${String(val)===String(v??'')?' selected':''}>${esc(lab)}</option>`).join('')}</select>`; break;
+    case 'radio': inner = `<fieldset><legend>${label}</legend>${help}<div class="radios">${f.options.map(([val,lab],i)=>`<label class="radio"><input type="radio" name="${f.name}" value="${esc(val)}"${String(val)===String(v??'')?' checked':''}${f.required&&i===0?' required':''}> ${esc(lab)}</label>`).join('')}</div></fieldset>`; break;
+    case 'days': { const arr=(v||[]).map(Number); inner = `<fieldset><legend>${label}</legend>${help}<div class="radios">${DAY_ORDER.map(d=>`<label class="radio"><input type="checkbox" name="${f.name}" value="${d}"${arr.includes(d)?' checked':''}> ${DAYS[d]}</label>`).join('')}</div></fieldset>`; break; }
+    default: inner = `<label for="${id}">${label}</label>${help}<input type="${f.type||'text'}" id="${id}" name="${f.name}" value="${esc(v)}"${req}${desc}${f.attrs||''}>`;
+  }
+  return `<div class="field"${show}>${inner}</div>`;
+}
+let formCtx = null;
+function openForm(title, fields, values, onSave, submitLabel){
+  $('#dlgTitle').textContent = title;
+  $('#dlgSubmit').textContent = submitLabel || 'Save';
+  $('#dlgBody').innerHTML = fields.map(f=>fieldHTML(f, values[f.name])).join('');
+  formCtx = {fields, onSave};
+  updateVisibility();
+  $('#dlg').showModal();
+  $('#dlgBody').scrollTop = 0;
+  const first = $('#dlgBody').querySelector('input,select,textarea');
+  if(first) first.focus();
+}
+function fieldValue(form, name){
+  const els = form.querySelectorAll(`[name="${name}"]`);
+  if(!els.length) return '';
+  if(els[0].type==='radio'){ const c=[...els].find(e=>e.checked); return c?c.value:''; }
+  return els[0].value;
+}
+function updateVisibility(){
+  const form = $('#dlgForm');
+  form.querySelectorAll('[data-show-if]').forEach(el=>{
+    const c = JSON.parse(el.dataset.showIf); const val = fieldValue(form, c.field);
+    el.hidden = ('eq' in c) ? val !== c.eq : val === c.ne;
+  });
+}
+function collect(){
+  const form = $('#dlgForm'); const out = {};
+  for(const f of formCtx.fields){
+    if(f.type==='html') continue;
+    const els = form.querySelectorAll(`[name="${f.name}"]`);
+    if(f.type==='checkbox') out[f.name] = !!(els[0] && els[0].checked);
+    else if(f.type==='days') out[f.name] = [...els].filter(e=>e.checked).map(e=>Number(e.value));
+    else if(f.type==='radio') out[f.name] = fieldValue(form, f.name);
+    else if(f.type==='number') out[f.name] = els[0] && els[0].value!=='' ? Number(els[0].value) : '';
+    else out[f.name] = els[0] ? els[0].value.trim() : '';
+  }
+  return out;
+}
+$('#dlgForm').addEventListener('change', updateVisibility);
+$('#dlgForm').addEventListener('input', updateVisibility);
+$('#dlgForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const form = e.target;
+  const bad = [...form.querySelectorAll('[required]')].find(el=>!el.closest('[hidden]') && !el.checkValidity());
+  if(bad){ bad.reportValidity(); return; }
+  const vals = collect();
+  const err = formCtx.onSave(vals);
+  if(typeof err === 'string'){ toast(err, true); return; }
+  save(); $('#dlg').close(); render();
+});
+
+/* ===================== Entity forms ===================== */
+function volunteerForm(v){
+  v = v || {};
+  openForm(v.id ? 'Edit volunteer' : 'Add volunteer', [
+    {name:'name', label:'Name', required:true},
+    {name:'phone', label:'Phone', type:'tel'},
+    {name:'email', label:'Email', type:'email'},
+    {name:'availability', label:'Availability', type:'textarea', rows:2, help:'e.g. "Weekday mornings, not Fridays"'},
+    {name:'trained', label:'Training completed', type:'checkbox'},
+    {name:'trainedDate', label:'Training date', type:'date'},
+    {name:'checks', label:'Checks / references (if your group requires them)', help:'e.g. "Reference received 3 Sept" or "Background check done". Follow the rules where you are.'},
+    {name:'status', label:'Status', type:'select', options:[['active','Active'],['inactive','Inactive']]},
+    {name:'notes', label:'Notes', type:'textarea', rows:2},
+  ], Object.assign({status:'active'}, v), vals=>{
+    if(!vals.name) return 'Please enter a name.';
+    if(vals.trained && !vals.trainedDate) vals.trainedDate = today();
+    if(v.id) Object.assign(vol(v.id), vals); else D.volunteers.push(Object.assign({id:uid(), created:today()}, vals));
+    toast('Volunteer saved');
+  });
+}
+function participantForm(p){
+  p = p || {};
+  openForm(p.id ? 'Edit participant' : 'Add participant', [
+    {name:'name', label:'Name', required:true},
+    {name:'phone', label:'Phone', type:'tel'},
+    {name:'preferredTimes', label:'Preferred call days / times', help:'In their words, e.g. "Mornings after 10, not Sundays"'},
+    {name:'timezone', label:'Time zone', help:`Start typing to pick from the list (e.g. Europe/London). Leave as is if it's the same as yours (${esc(LOCAL_TZ||'unknown')}).`, attrs:' list="tzlist" autocomplete="off"'},
+    {name:'language', label:'Language(s)'},
+    {name:'emergencyName', label:'Emergency contact (name and relationship)'},
+    {name:'emergencyPhone', label:'Emergency contact phone', type:'tel'},
+    {name:'consent', label:'Consent recorded (they agreed to calls and to us keeping these details)', type:'checkbox'},
+    {name:'consentDate', label:'Consent date', type:'date'},
+    {name:'startDate', label:'Program start date', type:'date'},
+    {name:'status', label:'Status', type:'select', options:[['active','Active'],['paused','Paused'],['ended','Ended']], help:'Paused and ended participants do not appear in upcoming calls.'},
+    {name:'notes', label:'Notes', type:'textarea', rows:3, help:'Keep it short and kind. Write only what you would be happy for them to read.'},
+  ], Object.assign({status:'active', timezone:LOCAL_TZ, startDate:today()}, p), vals=>{
+    if(!vals.name) return 'Please enter a name.';
+    if(vals.consent && !vals.consentDate) vals.consentDate = today();
+    if(p.id) Object.assign(par(p.id), vals); else D.participants.push(Object.assign({id:uid(), created:today()}, vals));
+    toast(vals.consent ? 'Participant saved' : 'Saved. Remember to record consent before the first call.');
+  });
+}
+function pairingForm(pr){
+  pr = pr || {};
+  if(!D.volunteers.length || !D.participants.length){ toast('Add at least one volunteer and one participant first.', true); return; }
+  const vOpts = [['','Choose a volunteer…'], ...D.volunteers.filter(v=>v.status!=='inactive' || v.id===pr.volunteerId).map(v=>[v.id, v.name + (v.trained?'':' (training not recorded)')])];
+  const pOpts = [['','Choose a participant…'], ...D.participants.filter(p=>p.status!=='ended' || p.id===pr.participantId).map(p=>[p.id, p.name + (p.consent?'':' (no consent recorded)')])];
+  const start = pr.startDate || today();
+  openForm(pr.id ? 'Edit pairing' : 'New pairing', [
+    {name:'volunteerId', label:'Volunteer', type:'select', options:vOpts, required:true},
+    {name:'participantId', label:'Participant', type:'select', options:pOpts, required:true},
+    {name:'days', label:'Call days', type:'days', help:'One day = weekly, two days = twice a week. In the research trial, calls were daily for the first 5 days, then at least twice a week.'},
+    {name:'interval', label:'How often', type:'select', options:[['1','Every week'],['2','Every other week']]},
+    {name:'time', label:'Call time (your time)', type:'time'},
+    {name:'startDate', label:'Start date', type:'date', required:true},
+    {name:'endDate', label:'End date (optional)', type:'date', help:'Programs often run 4–8 weeks. Leave blank for ongoing.'},
+    {name:'active', label:'Pairing is active', type:'checkbox'},
+    {name:'notes', label:'Notes', type:'textarea', rows:2},
+  ], Object.assign({interval:'1', time:'10:00', startDate:start, endDate:addDays(start,27), active:true}, pr), vals=>{
+    if(!vals.volunteerId || !vals.participantId) return 'Choose a volunteer and a participant.';
+    if(!vals.days.length) return 'Choose at least one call day.';
+    if(vals.endDate && vals.endDate < vals.startDate) return 'End date is before the start date.';
+    if(pr.id) Object.assign(pairing(pr.id), vals); else D.pairings.push(Object.assign({id:uid(), created:today()}, vals));
+    const warn = [];
+    if(!vol(vals.volunteerId)?.trained) warn.push('volunteer training not recorded');
+    if(!par(vals.participantId)?.consent) warn.push('participant consent not recorded');
+    toast(warn.length ? 'Pairing saved. Note: ' + warn.join(' and ') + '.' : 'Pairing saved. Calls added to the schedule.', !!warn.length);
+  });
+}
+function callForm(c, slot){
+  c = c || {};
+  const editing = !!c.id;
+  const base = editing ? c : {
+    participantId: slot?.participantId || '', volunteerId: slot?.volunteerId || '',
+    date: slot?.date || today(), time: slot?.time || nowTime(), outcome:'', concernLevel:'none', slotKey: slot?.key || ''
+  };
+  const pOpts = [['','Choose…'], ...D.participants.map(p=>[p.id,p.name])];
+  const vOpts = [['','Choose…'], ...D.volunteers.map(v=>[v.id,v.name])];
+  const title = slot ? `Log call: ${pName(slot.participantId)}` : (editing ? 'Edit call record' : 'Log a call');
+  openForm(title, [
+    {name:'participantId', label:'Participant', type:'select', options:pOpts, required:true},
+    {name:'volunteerId', label:'Volunteer', type:'select', options:vOpts, required:true},
+    {name:'date', label:'Date', type:'date', required:true},
+    {name:'time', label:'Time', type:'time'},
+    {name:'outcome', label:'What happened?', type:'radio', required:true, options:Object.entries(OUTCOMES)},
+    {name:'newDate', label:'New date', type:'date', showIf:{field:'outcome',eq:'rescheduled'}, help:'A one-off call will be added to the schedule.'},
+    {name:'newTime', label:'New time', type:'time', showIf:{field:'outcome',eq:'rescheduled'}},
+    {name:'duration', label:'Length (minutes)', type:'number', attrs:' min="0" max="600" inputmode="numeric"', showIf:{field:'outcome',eq:'completed'}},
+    {name:'mood', label:'Mood check (how did they seem?)', type:'radio', options:[['','Not sure'], ...Object.entries(MOODS)], showIf:{field:'outcome',eq:'completed'}},
+    {name:'notes', label:'Short notes', type:'textarea', rows:3, help:'Brief and factual: topics to pick up next time, anything they asked for. No diagnosis.'},
+    {name:'concernLevel', label:'Any concern?', type:'radio', options:Object.entries(CONCERNS), help:'Follow-up needed: tell the coordinator within 24 hours. Urgent: act now using the crisis protocol.'},
+    {name:'crisisInline', type:'html', html:crisisHTML(), showIf:{field:'concernLevel',eq:'urgent'}},
+    {name:'concernText', label:'What is the concern? What did you do?', type:'textarea', rows:3, showIf:{field:'concernLevel',ne:'none'}},
+  ], base, vals=>{
+    if(!vals.participantId || !vals.volunteerId) return 'Choose the participant and volunteer.';
+    if(!vals.outcome) return 'Choose what happened.';
+    if(vals.outcome==='rescheduled' && !vals.newDate) return 'Choose the new date for the rescheduled call.';
+    vals.concernLevel = vals.concernLevel || 'none';
+    if(vals.outcome!=='completed'){ vals.duration=''; vals.mood=''; }
+    if(vals.outcome!=='rescheduled'){ vals.newDate=''; vals.newTime=''; }
+    if(vals.concernLevel==='none') vals.concernText='';
+    let rec;
+    if(editing){
+      rec = D.calls.find(x=>x.id===c.id);
+      const prevLevel = rec.concernLevel;
+      Object.assign(rec, vals);
+      if(vals.concernLevel!=='none' && prevLevel!==vals.concernLevel){ rec.resolved=false; rec.resolvedAt=''; rec.resolutionNotes=''; }
+    } else {
+      rec = Object.assign({id:uid(), slotKey:base.slotKey, loggedAt:new Date().toISOString(), resolved:false}, vals);
+      if(!rec.slotKey){
+        const s = slotsBetween(vals.date, vals.date).find(x=>x.participantId===vals.participantId && !callForSlot(x.key));
+        if(s) rec.slotKey = s.key;
+      }
+      D.calls.push(rec);
+    }
+    D.oneOffs = D.oneOffs.filter(o=>o.fromCallId!==rec.id || callForSlot('o|'+o.id));
+    if(vals.outcome==='rescheduled'){
+      const pr = rec.slotKey && !rec.slotKey.startsWith('o|') ? pairing(rec.slotKey.split('|')[0]) : null;
+      D.oneOffs.push({id:uid(), fromCallId:rec.id, pairingId:pr?.id||'', participantId:vals.participantId, volunteerId:vals.volunteerId, date:vals.newDate, time:vals.newTime});
+    }
+    if(vals.concernLevel==='urgent'){ toast('Urgent concern logged. Follow the crisis protocol now and contact the coordinator.', true); window.scrollTo(0,0); }
+    else if(vals.concernLevel==='follow-up') toast('Saved. Please make sure the coordinator hears about this within 24 hours.');
+    else toast('Call logged. Thank you!');
+  }, 'Save call');
+}
+function uclaForm(){
+  if(!D.participants.length){ toast('Add a participant first.', true); return; }
+  openForm('Loneliness check (3-item UCLA scale)', [
+    {name:'participantId', label:'Participant', type:'select', options:[['','Choose…'], ...D.participants.map(p=>[p.id,p.name])], required:true},
+    {name:'phase', label:'When', type:'radio', options:[['start','Start of program'],['end','End of program'],['other','Other / mid-way']], required:true},
+    {name:'date', label:'Date', type:'date', required:true},
+    {name:'intro', type:'html', html:'<p class="help">Read this aloud: <em>"The next questions are about how you feel about different aspects of your life. For each one, tell me how often you feel that way."</em> It is fine for them to skip.</p>'},
+    {name:'q1', label:'1. '+UCLA_ITEMS[0], type:'radio', options:UCLA_OPTS, required:true},
+    {name:'q2', label:'2. '+UCLA_ITEMS[1], type:'radio', options:UCLA_OPTS, required:true},
+    {name:'q3', label:'3. '+UCLA_ITEMS[2], type:'radio', options:UCLA_OPTS, required:true},
+  ], {date:today(), phase:'start'}, vals=>{
+    if(!vals.participantId) return 'Choose a participant.';
+    const items=[vals.q1,vals.q2,vals.q3].map(Number);
+    if(items.some(x=>!x)) return 'Answer all three questions (or cancel).';
+    D.ucla.push({id:uid(), participantId:vals.participantId, phase:vals.phase, date:vals.date, items, total:items.reduce((a,b)=>a+b,0)});
+    toast('Loneliness check saved');
+  });
+}
+
+/* ===================== Views ===================== */
+function chip(cls, text){ return `<span class="chip ${cls}">${esc(text)}</span>`; }
+function outcomeChip(o){ return o==='completed'?chip('ok','✓ Completed'):o==='no_answer'?chip('warn','No answer'):o==='rescheduled'?chip('info','Rescheduled'):''; }
+function concernChip(l, resolved){ if(!l||l==='none') return ''; const t = CONCERNS[l]+(resolved?' (resolved)':''); return chip(resolved?'muted':(l==='urgent'?'bad':'warn'), (l==='urgent'?'🚨 ':'⚑ ')+t); }
+
+function viewUpcoming(){
+  const t = today(), from = addDays(t,-14), to = addDays(t,13);
+  const slots = slotsBetween(from, to); slotIndex = {}; slots.forEach(s=>slotIndex[s.key]=s);
+  const overdue = slots.filter(s=>s.date<t && !callForSlot(s.key));
+  const todays = slots.filter(s=>s.date===t);
+  const openConcerns = D.calls.filter(isOpenConcern).length;
+  let h = '';
+  if(!D.settings.privacyDismissed) h += `<div class="note"><p>🔒 <strong>Your data stays on this device.</strong> Everything you enter is saved only in this browser. Nothing is sent to the internet. Use a password-protected device, don't share it, and <a href="#settings">export a backup</a> regularly.</p><button class="secondary small" data-action="dismiss-privacy" type="button">Got it</button></div>`;
+  const last = D.settings.lastExport;
+  if(hasData() && (!last || diffDays(last.slice(0,10), t) > 7)) h += `<div class="note warn"><p>💾 ${last ? 'Your last backup was '+esc(fmtDate(last.slice(0,10)))+'.' : 'You have not exported a backup yet.'} If this browser's data is cleared, your records are lost.</p><button class="secondary small" type="button" data-action="export-json">Export backup now</button></div>`;
+  h += `<div class="toolbar"><h1 style="margin:0">Upcoming calls</h1><span class="spacer"></span><button type="button" data-action="log-call">+ Log a call</button><button type="button" class="secondary" data-action="print">🖨 Print</button></div>`;
+  h += `<div class="stats">
+    <div class="stat"><div class="num">${todays.length}</div><div class="lab">Calls today (${todays.filter(s=>callForSlot(s.key)).length} logged)</div></div>
+    <div class="stat ${overdue.length?'bad':''}"><div class="num">${overdue.length}</div><div class="lab">Overdue / not logged (last 14 days)</div></div>
+    <div class="stat"><div class="num">${slots.filter(s=>s.date>t).length}</div><div class="lab">Calls in the next 13 days</div></div>
+    <div class="stat ${openConcerns?'warn':''}"><div class="num">${openConcerns}</div><div class="lab"><a href="#concerns">Open concerns</a></div></div>
+  </div>`;
+  if(!D.pairings.length){
+    return h + `<div class="card empty"><h2>Welcome! Let's set up your first check-in calls.</h2><ol><li><a href="#volunteers">Add a volunteer</a></li><li><a href="#participants">Add a participant</a> (and record their consent)</li><li><a href="#pairings">Pair them</a> with a call day and time</li></ol><p>Calls for the next 14 days will appear here automatically.</p><p><button type="button" class="secondary" data-action="sample">Load sample data to explore</button></p></div>`;
+  }
+  const slotCard = (s, cls) => {
+    const c = callForSlot(s.key); const p = par(s.participantId) || {};
+    const st = c ? 'done' : cls;
+    const tt = theirTime(s.date, s.time, p.timezone);
+    return `<div class="slot ${st}" data-slot="${esc(s.key)}">
+      <div class="slot-time">${s.time?esc(fmtTime(s.time)):'Any time'}${cls==='overdue'?`<div class="small">${esc(fmtDate(s.date))}</div>`:''}</div>
+      <div class="slot-main"><strong>${esc(p.name||'?')}</strong> <span class="small">with ${esc(vName(s.volunteerId))}</span> ${s.oneOff?chip('info','one-off'):''}
+        <div class="small">${[p.phone?telLink(p.phone):'', tt?esc(tt):'', p.language?esc(p.language):''].filter(Boolean).join(' · ')}</div></div>
+      <div class="slot-act">${c ? outcomeChip(c.outcome)+' '+concernChip(c.concernLevel,c.resolved) : (cls==='overdue'?chip('bad','Missed / not logged'):'') + `<button type="button" class="small" data-action="log-slot" data-key="${esc(s.key)}">Log call</button>`}</div>
+    </div>`;
+  };
+  if(overdue.length){
+    h += `<h2 class="day-h" style="color:var(--bad)">⏰ Overdue or not logged</h2><p class="small">Scheduled calls from the last 14 days with no record. Log what happened (including "no answer") so nothing slips.</p>`;
+    h += overdue.map(s=>slotCard(s,'overdue')).join('');
+  }
+  for(let d=t; d<=to; d=addDays(d,1)){
+    const dslots = slots.filter(s=>s.date===d);
+    if(!dslots.length && d!==t) continue;
+    h += `<h2 class="day-h">${d===t?'📅 Today, ':''}${esc(fmtDate(d,true))} <span class="small">${dslots.length} call${dslots.length===1?'':'s'}</span></h2>`;
+    h += dslots.length ? dslots.map(s=>slotCard(s, d===t?'today':'')).join('') : '<p class="small">No calls scheduled today.</p>';
+  }
+  return h;
+}
+
+function viewLog(){
+  const filt = viewState.logFilter || '';
+  const calls = D.calls.filter(c=>!filt || c.participantId===filt).sort((a,b)=>((b.date||'')+(b.time||'')).localeCompare((a.date||'')+(a.time||'')));
+  let h = `<div class="toolbar"><h1 style="margin:0">Call log</h1><span class="spacer"></span>
+   <label for="logFilter" class="small">Show</label><select id="logFilter" style="width:auto" data-change="log-filter"><option value="">All participants</option>${D.participants.map(p=>`<option value="${esc(p.id)}"${p.id===filt?' selected':''}>${esc(p.name)}</option>`).join('')}</select>
+   <button type="button" data-action="log-call">+ Log a call</button><button type="button" class="secondary" data-action="export-csv">Export CSV</button></div>`;
+  if(!calls.length) return h + `<div class="card empty">No calls logged yet. Use <strong>Log call</strong> on the Upcoming page after each call.</div>`;
+  h += `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Participant</th><th>Volunteer</th><th>Outcome</th><th>Mins</th><th>Mood</th><th>Concern</th><th>Notes</th><th><span class="sr">Actions</span></th></tr></thead><tbody>`;
+  h += calls.map(c=>`<tr><td>${esc(fmtDate(c.date))}<div class="small">${esc(fmtTime(c.time))}</div></td><td>${esc(pName(c.participantId))}</td><td>${esc(vName(c.volunteerId))}</td><td>${outcomeChip(c.outcome)}${c.outcome==='rescheduled'&&c.newDate?`<div class="small">→ ${esc(fmtDate(c.newDate))}</div>`:''}</td><td>${esc(c.duration)}</td><td>${c.mood?esc(MOODS[c.mood]||c.mood):''}</td><td>${concernChip(c.concernLevel,c.resolved)}</td><td>${esc(c.notes)}${c.concernText?`<div class="small"><strong>Concern:</strong> ${esc(c.concernText)}</div>`:''}</td>
+   <td style="white-space:nowrap"><button type="button" class="secondary small" data-action="edit-call" data-id="${esc(c.id)}">Edit</button> <button type="button" class="danger small" data-action="del-call" data-id="${esc(c.id)}" aria-label="Delete call record">Delete</button></td></tr>`).join('');
+  return h + '</tbody></table></div>';
+}
+
+function viewConcerns(){
+  const open = D.calls.filter(isOpenConcern).sort((a,b)=>(a.concernLevel==='urgent'?0:1)-(b.concernLevel==='urgent'?0:1) || (b.date||'').localeCompare(a.date||''));
+  const done = D.calls.filter(c=>c.concernLevel && c.concernLevel!=='none' && c.resolved).sort((a,b)=>(b.resolvedAt||'').localeCompare(a.resolvedAt||''));
+  let h = `<h1>Concerns</h1><p class="small">For the coordinator. Urgent concerns need action now; follow-ups within 24 hours. Record what you did, then mark resolved.</p>`;
+  if(!open.length) h += `<div class="card empty">✅ No open concerns.</div>`;
+  h += open.map(c=>{
+    const p = par(c.participantId) || {};
+    return `<div class="card concern" style="border-left:6px solid ${c.concernLevel==='urgent'?'var(--bad)':'var(--warn)'}">
+      <div class="row"><h3>${esc(p.name||'?')} ${concernChip(c.concernLevel)}</h3><span class="small">Logged ${esc(fmtDate(c.date))} ${esc(fmtTime(c.time))} by ${esc(vName(c.volunteerId))}</span></div>
+      <p class="kv"><b>Concern:</b> ${esc(c.concernText||'(no details written)')}</p>
+      ${c.notes?`<p class="kv"><b>Call notes:</b> ${esc(c.notes)}</p>`:''}
+      <p class="kv"><b>Participant phone:</b> ${telLink(p.phone)||'—'} · <b>Emergency contact:</b> ${esc(p.emergencyName||'—')} ${telLink(p.emergencyPhone)}</p>
+      <div class="field" style="margin-top:.6rem"><label for="res_${esc(c.id)}">Resolution notes (what was done, who was contacted)</label><textarea id="res_${esc(c.id)}" rows="2"></textarea></div>
+      <div class="actions"><button type="button" data-action="resolve" data-id="${esc(c.id)}">✓ Mark resolved</button>${c.concernLevel==='urgent'?'<button type="button" class="secondary" data-action="show-crisis">Show crisis protocol</button>':''}</div>
+    </div>`;
+  }).join('');
+  if(done.length){
+    h += `<details class="card"><summary><strong>Resolved concerns (${done.length})</strong></summary>${done.map(c=>`<div style="border-top:1px solid var(--line);padding:.6rem 0"><div class="row"><strong>${esc(pName(c.participantId))} ${concernChip(c.concernLevel,true)}</strong><span class="small">Raised ${esc(fmtDate(c.date))} · resolved ${esc(fmtDate((c.resolvedAt||'').slice(0,10)))}</span></div><p class="kv"><b>Concern:</b> ${esc(c.concernText)}</p><p class="kv"><b>Resolution:</b> ${esc(c.resolutionNotes||'—')}</p><button type="button" class="secondary small" data-action="reopen" data-id="${esc(c.id)}">Reopen</button></div>`).join('')}</details>`;
+  }
+  return h;
+}
+
+function viewParticipants(){
+  let h = `<div class="toolbar"><h1 style="margin:0">Participants</h1><span class="spacer"></span><button type="button" data-action="add-participant">+ Add participant</button></div>`;
+  if(!D.participants.length) return h + `<div class="card empty">No participants yet. Add someone who has agreed to receive calls.</div>`;
+  const order = {active:0, paused:1, ended:2};
+  h += '<div class="grid">' + [...D.participants].sort((a,b)=>(order[a.status]??3)-(order[b.status]??3) || String(a.name).localeCompare(b.name)).map(p=>{
+    const prs = D.pairings.filter(x=>x.participantId===p.id && x.active!==false);
+    const st = p.status==='active'?chip('ok','Active'):p.status==='paused'?chip('warn','Paused'):chip('muted','Ended');
+    const ucl = D.ucla.filter(u=>u.participantId===p.id);
+    return `<div class="card"><div class="row"><h3>${esc(p.name)}</h3>${st}</div>
+      <p class="kv"><b>Phone:</b> ${telLink(p.phone)||'—'}</p>
+      <p class="kv"><b>Prefers:</b> ${esc(p.preferredTimes||'—')}</p>
+      <p class="kv"><b>Time zone:</b> ${esc(p.timezone||'—')} · <b>Language:</b> ${esc(p.language||'—')}</p>
+      <p class="kv"><b>Emergency contact:</b> ${esc(p.emergencyName||'—')} ${telLink(p.emergencyPhone)}</p>
+      <p class="kv"><b>Consent:</b> ${p.consent?chip('ok','✓ Recorded '+fmtDate(p.consentDate)):chip('bad','Not recorded')} · <b>Started:</b> ${esc(fmtDate(p.startDate)||'—')}</p>
+      <p class="kv"><b>Paired with:</b> ${prs.length?prs.map(x=>esc(vName(x.volunteerId))+' <span class="small">('+esc(scheduleText(x))+')</span>').join(', '):'<span class="small">Not paired yet</span>'}</p>
+      ${ucl.length?`<p class="kv"><b>Loneliness checks:</b> ${ucl.map(u=>esc(u.phase)+' '+esc(u.total)+'/9').join(', ')}</p>`:''}
+      ${p.notes?`<p class="kv"><b>Notes:</b> ${esc(p.notes)}</p>`:''}
+      <div class="actions"><button type="button" class="secondary small" data-action="edit-participant" data-id="${esc(p.id)}">Edit</button><button type="button" class="danger small" data-action="del-participant" data-id="${esc(p.id)}">Delete</button></div></div>`;
+  }).join('') + '</div>';
+  return h;
+}
+
+function viewVolunteers(){
+  let h = `<div class="toolbar"><h1 style="margin:0">Volunteers</h1><span class="spacer"></span><button type="button" data-action="add-volunteer">+ Add volunteer</button></div>`;
+  if(!D.volunteers.length) return h + `<div class="card empty">No volunteers yet. Add the people who will make calls.</div>`;
+  const monthStart = today().slice(0,8)+'01';
+  h += '<div class="grid">' + [...D.volunteers].sort((a,b)=>(a.status==='inactive')-(b.status==='inactive') || String(a.name).localeCompare(b.name)).map(v=>{
+    const prs = D.pairings.filter(x=>x.volunteerId===v.id && x.active!==false);
+    const n = D.calls.filter(c=>c.volunteerId===v.id && c.outcome==='completed' && c.date>=monthStart).length;
+    return `<div class="card"><div class="row"><h3>${esc(v.name)}</h3>${v.status==='inactive'?chip('muted','Inactive'):chip('ok','Active')}</div>
+      <p class="kv"><b>Phone:</b> ${telLink(v.phone)||'—'} · <b>Email:</b> ${v.email?`<a href="mailto:${esc(v.email)}">${esc(v.email)}</a>`:'—'}</p>
+      <p class="kv"><b>Availability:</b> ${esc(v.availability||'—')}</p>
+      <p class="kv"><b>Training:</b> ${v.trained?chip('ok','✓ Completed '+fmtDate(v.trainedDate)):chip('warn','Not yet')}</p>
+      ${v.checks?`<p class="kv"><b>Checks:</b> ${esc(v.checks)}</p>`:''}
+      <p class="kv"><b>Calling:</b> ${prs.length?prs.map(x=>esc(pName(x.participantId))).join(', '):'<span class="small">No one yet</span>'} · <b>Completed this month:</b> ${n}</p>
+      ${v.notes?`<p class="kv"><b>Notes:</b> ${esc(v.notes)}</p>`:''}
+      <div class="actions"><button type="button" class="secondary small" data-action="edit-volunteer" data-id="${esc(v.id)}">Edit</button><button type="button" class="danger small" data-action="del-volunteer" data-id="${esc(v.id)}">Delete</button></div></div>`;
+  }).join('') + '</div>';
+  return h;
+}
+
+function viewPairings(){
+  let h = `<div class="toolbar"><h1 style="margin:0">Pairings</h1><span class="spacer"></span><button type="button" data-action="add-pairing">+ New pairing</button></div>
+  <p class="small">A pairing links one volunteer with one participant on a regular schedule. Upcoming calls are created from these automatically.</p>`;
+  if(!D.pairings.length) return h + `<div class="card empty">No pairings yet.</div>`;
+  h += `<div class="table-wrap"><table><thead><tr><th>Participant</th><th>Volunteer</th><th>Schedule</th><th>Dates</th><th>Next call</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead><tbody>`;
+  h += D.pairings.map(x=>{
+    const ended = isDate(x.endDate) && x.endDate < today();
+    const pst = par(x.participantId)?.status;
+    const st = x.active===false ? chip('muted','Inactive') : ended ? chip('muted','Finished') : pst!=='active' ? chip('warn','Participant '+(pst||'missing')) : chip('ok','Active');
+    return `<tr><td>${esc(pName(x.participantId))}</td><td>${esc(vName(x.volunteerId))}</td><td>${esc(scheduleText(x))}</td><td>${esc(fmtDate(x.startDate))} – ${x.endDate?esc(fmtDate(x.endDate)):'ongoing'}</td><td>${esc(nextCallFor(x))}</td><td>${st}</td>
+    <td style="white-space:nowrap"><button type="button" class="secondary small" data-action="edit-pairing" data-id="${esc(x.id)}">Edit</button> <button type="button" class="danger small" data-action="del-pairing" data-id="${esc(x.id)}">Delete</button></td></tr>`;
+  }).join('');
+  return h + '</tbody></table></div>';
+}
+
+function viewStats(){
+  const t = today(), ws = weekStart(t), ms = t.slice(0,8)+'01', d30 = addDays(t,-30);
+  const completed = D.calls.filter(c=>c.outcome==='completed');
+  const week = completed.filter(c=>c.date>=ws && c.date<=t).length;
+  const month = completed.filter(c=>c.date>=ms && c.date<=t).length;
+  const past = slotsBetween(d30, addDays(t,-1));
+  let missed=0, done=0;
+  for(const s of past){ const c = callForSlot(s.key); if(!c || c.outcome==='no_answer') missed++; else if(c.outcome==='completed') done++; }
+  const rate = (missed+done) ? Math.round(missed*100/(missed+done)) : null;
+  const active = D.participants.filter(p=>p.status==='active').length;
+  const moods = completed.filter(c=>c.date>=d30 && c.mood).map(c=>Number(c.mood));
+  const avgMood = moods.length ? (moods.reduce((a,b)=>a+b,0)/moods.length).toFixed(1) : '—';
+  const mins = completed.filter(c=>c.date>=d30 && c.duration!=='' && c.duration!=null).map(c=>Number(c.duration));
+  const avgMin = mins.length ? Math.round(mins.reduce((a,b)=>a+b,0)/mins.length) : '—';
+  const openC = D.calls.filter(isOpenConcern).length;
+  let h = `<h1>Stats</h1><div class="stats">
+    <div class="stat"><div class="num">${week}</div><div class="lab">Calls completed this week (from Monday)</div></div>
+    <div class="stat"><div class="num">${month}</div><div class="lab">Calls completed this month</div></div>
+    <div class="stat ${rate>30?'warn':''}"><div class="num">${rate===null?'—':rate+'%'}</div><div class="lab">Missed-call rate, last 30 days<br><span class="small">${missed} missed or not logged of ${missed+done}</span></div></div>
+    <div class="stat"><div class="num">${active}</div><div class="lab">Participants active</div></div>
+    <div class="stat"><div class="num">${D.volunteers.filter(v=>v.status!=='inactive').length}</div><div class="lab">Volunteers active (${D.volunteers.filter(v=>v.trained).length} trained)</div></div>
+    <div class="stat"><div class="num">${avgMin}</div><div class="lab">Average call length (mins, 30 days)</div></div>
+    <div class="stat"><div class="num">${avgMood}</div><div class="lab">Average mood check (1–5, 30 days)</div></div>
+    <div class="stat ${openC?'warn':''}"><div class="num">${openC}</div><div class="lab">Open concerns</div></div>
+  </div>
+  <p class="small">Missed-call rate = scheduled calls with "no answer" or nothing logged, divided by those plus completed calls. Rescheduled calls are not counted as missed.</p>`;
+  h += `<div class="toolbar" style="margin-top:1.5rem"><h2 style="margin:0">Loneliness check (optional)</h2><span class="spacer"></span><button type="button" data-action="add-ucla">+ Record a loneliness check</button></div>
+  <div class="card"><p style="margin-top:0">Uses the <strong>3-item UCLA Loneliness Scale</strong> (Hughes, Waite, Hawkley &amp; Cacioppo, 2004). Three questions, each scored 1 (hardly ever) to 3 (often). Total 3–9; <strong>higher means lonelier, so a drop is an improvement.</strong> Ask at the start and end of the program. It is a rough guide for your program, not a diagnosis. Only ask with consent; people can skip.</p>
+  <p class="small" style="margin-bottom:0">Hughes ME, Waite LJ, Hawkley LC, Cacioppo JT. A short scale for measuring loneliness in large surveys: results from two population-based studies. <em>Research on Aging</em>. 2004;26(6):655–672. doi:10.1177/0164027504268574. For context: in Kahlon et al. (<em>JAMA Psychiatry</em>, 2021), people who got 4 weeks of calls scored about 1.1 points lower on this scale than those who didn't.</p></div>`;
+  const rows = D.participants.map(p=>{
+    const u = D.ucla.filter(x=>x.participantId===p.id).sort((a,b)=>String(a.date).localeCompare(b.date));
+    const s = u.find(x=>x.phase==='start') || null; const e = [...u].reverse().find(x=>x.phase==='end') || null;
+    return {p, s, e, u};
+  }).filter(r=>r.u.length);
+  const pairs = rows.filter(r=>r.s && r.e);
+  if(rows.length){
+    const avg = pairs.length ? (pairs.reduce((a,r)=>a+(r.e.total-r.s.total),0)/pairs.length) : null;
+    h += `<div class="stats"><div class="stat"><div class="num">${rows.filter(r=>r.s).length}</div><div class="lab">Start scores recorded</div></div><div class="stat"><div class="num">${pairs.length}</div><div class="lab">People with start and end scores</div></div><div class="stat"><div class="num">${avg===null?'—':(avg>0?'+':'')+avg.toFixed(1)}</div><div class="lab">Average change, start to end (negative = less lonely)</div></div></div>`;
+    h += `<div class="table-wrap"><table><thead><tr><th>Participant</th><th>Start</th><th>End</th><th>Change</th><th>All checks</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.p.name)}</td><td>${r.s?esc(r.s.total)+'/9 <span class="small">'+esc(fmtDate(r.s.date))+'</span>':'—'}</td><td>${r.e?esc(r.e.total)+'/9 <span class="small">'+esc(fmtDate(r.e.date))+'</span>':'—'}</td><td>${r.s&&r.e?((r.e.total-r.s.total)>0?'+':'')+(r.e.total-r.s.total):'—'}</td><td>${r.u.map(x=>`${esc(x.phase)} ${esc(x.total)} <button type="button" class="danger small" data-action="del-ucla" data-id="${esc(x.id)}" aria-label="Delete check">✕</button>`).join(' ')}</td></tr>`).join('')}</tbody></table></div>`;
+  } else h += `<p class="small">No loneliness checks recorded yet.</p>`;
+  if(D.volunteers.length){
+    h += `<h2>Calls by volunteer (this month)</h2><div class="table-wrap"><table><thead><tr><th>Volunteer</th><th>Completed</th><th>No answer</th><th>Rescheduled</th><th>Concerns raised</th></tr></thead><tbody>${D.volunteers.map(v=>{const cs=D.calls.filter(c=>c.volunteerId===v.id && c.date>=ms && c.date<=t); return `<tr><td>${esc(v.name)}</td><td>${cs.filter(c=>c.outcome==='completed').length}</td><td>${cs.filter(c=>c.outcome==='no_answer').length}</td><td>${cs.filter(c=>c.outcome==='rescheduled').length}</td><td>${cs.filter(c=>c.concernLevel&&c.concernLevel!=='none').length}</td></tr>`;}).join('')}</tbody></table></div>`;
+  }
+  return h;
+}
+
+function viewSettings(){
+  const s = D.settings;
+  const lines = (s.crisisLines||[]).map((l,i)=>`<div class="line-row"><input type="text" name="cl_label_${i}" aria-label="Line name and region" placeholder="Name / region" value="${esc(l.label)}"><input type="text" name="cl_number_${i}" aria-label="Phone number" placeholder="Number" value="${esc(l.number)}"><input type="text" name="cl_note_${i}" aria-label="Note" placeholder="Note (e.g. 24/7, text too)" value="${esc(l.note)}"><button type="button" class="danger small" data-action="del-line" data-i="${i}" aria-label="Remove line">✕</button></div>`).join('');
+  return `<h1>Settings &amp; data</h1>
+  <form id="settingsForm" class="card">
+    <h2 style="margin-top:0">Your organization</h2>
+    <div class="field"><label for="s_org">Organization or group name</label><input type="text" id="s_org" name="orgName" value="${esc(s.orgName)}" placeholder="e.g. St Mary's Friendly Calls"></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+      <div class="field"><label for="s_cn">Coordinator name</label><input type="text" id="s_cn" name="coordinatorName" value="${esc(s.coordinatorName)}"></div>
+      <div class="field"><label for="s_cp">Coordinator phone</label><input type="tel" id="s_cp" name="coordinatorPhone" value="${esc(s.coordinatorPhone)}"></div>
+      <div class="field"><label for="s_ce">Coordinator email</label><input type="email" id="s_ce" name="coordinatorEmail" value="${esc(s.coordinatorEmail)}"></div>
+    </div>
+    <div class="field"><label for="s_sg">Safeguarding contact (optional)</label><p class="help">e.g. your local adult protective services or council safeguarding team, with number.</p><input type="text" id="s_sg" name="safeguardingContact" value="${esc(s.safeguardingContact)}"></div>
+    <h2>Crisis protocol</h2>
+    <div class="field"><label for="s_em">Emergency instruction</label><input type="text" id="s_em" name="emergencyNote" value="${esc(s.emergencyNote)}"></div>
+    <fieldset class="field"><legend>Crisis lines (shown on the urgent banner)</legend><p class="help">The defaults are examples. Check them and replace with numbers that work where your participants live. Find local helplines at <a href="https://findahelpline.com" target="_blank" rel="noopener">findahelpline.com</a>.</p>${lines}
+    <button type="button" class="secondary small" data-action="add-line">+ Add a line</button> <button type="button" class="secondary small" data-action="reset-lines">Reset to examples</button></fieldset>
+    <div class="actions"><button type="submit">Save settings</button></div>
+  </form>
+  <div class="card"><h2 style="margin-top:0">Preview: what volunteers see for an urgent concern</h2>${crisisHTML()}</div>
+  <div class="card" id="data"><h2 style="margin-top:0">Backup &amp; data</h2>
+    <p>🔒 <strong>Privacy:</strong> all data lives only in this browser on this device. It is not uploaded anywhere. So: use a password-protected device that isn't shared, lock it when you step away, and <strong>export a backup regularly</strong>. Clearing browser data, using private/incognito mode, or losing the device will lose the records. Backup files contain personal information, so store them somewhere safe and delete old copies you no longer need.</p>
+    <p class="small">Last backup: ${s.lastExport?esc(new Date(s.lastExport).toLocaleString()):'never'}</p>
+    <div class="actions"><button type="button" data-action="export-json">💾 Export backup (JSON)</button><button type="button" class="secondary" data-action="import-json">Import backup</button><button type="button" class="secondary" data-action="export-csv">Export call log (CSV)</button></div>
+    <h3 style="margin-top:1.2rem">Try it out / start over</h3>
+    <div class="actions"><button type="button" class="secondary" data-action="sample">Load sample data</button><button type="button" class="danger" data-action="clear">Clear all data</button></div>
+    <p class="small">Sample data uses made-up people and fictional phone numbers. Loading it replaces whatever is currently stored.</p>
+  </div>
+  <div class="card"><h2 style="margin-top:0">About</h2><p>This toolkit helps small groups run regular, friendly check-in phone calls by trained volunteers. It is <strong>not therapy, counselling, or a crisis service</strong>. The approach is inspired by a randomized trial in which briefly trained lay callers phoned adults (mostly older, homebound Meals on Wheels clients) for 4 weeks, focusing on empathetic listening and letting the person lead the conversation; loneliness, depression and anxiety improved compared with no calls (Kahlon MK et al. <em>JAMA Psychiatry</em>. 2021;78(6):616–622. doi:10.1001/jamapsychiatry.2021.0113).</p><p class="small">Version 1. Works offline. See the volunteer training guide and coordinator setup guide that come with this app.</p></div>`;
+}
+
+/* ===================== Render & routing ===================== */
+const viewState = {};
+function currentView(){ const v = location.hash.slice(1); return VIEWS.some(x=>x[0]===v) ? v : 'upcoming'; }
+function render(){
+  const v = currentView();
+  const openC = D.calls.filter(isOpenConcern).length;
+  $('#nav').innerHTML = VIEWS.map(([k,l])=>`<a href="#${k}"${k===v?' aria-current="page"':''}>${esc(l)}${k==='concerns'&&openC?` <span class="badge"><span class="sr">open: </span>${openC}</span>`:''}</a>`).join('');
+  $('#orgName').textContent = D.settings.orgName || 'Check-in Calls';
+  document.title = (D.settings.orgName ? D.settings.orgName+' · ' : '') + 'Check-in Call Toolkit';
+  renderBanner();
+  const fn = {upcoming:viewUpcoming, log:viewLog, concerns:viewConcerns, participants:viewParticipants, volunteers:viewVolunteers, pairings:viewPairings, stats:viewStats, settings:viewSettings}[v];
+  $('#main').innerHTML = fn();
+}
+window.addEventListener('hashchange', ()=>{ render(); $('#main').focus({preventScroll:true}); window.scrollTo(0,0); });
+
+/* ===================== Actions ===================== */
+function exportJSON(){
+  D.settings.lastExport = new Date().toISOString(); save();
+  download(`checkin-backup-${today()}.json`, JSON.stringify(D, null, 2), 'application/json');
+  toast('Backup downloaded. Keep it somewhere safe: it contains personal details.'); render();
+}
+function csvCell(v){ let s = String(v ?? ''); if(/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
+function callsCSV(){
+  const head = ['date','time','participant','volunteer','outcome','duration_minutes','mood_1to5','concern_level','concern_details','concern_resolved','resolution_notes','notes','rescheduled_to'];
+  const rows = [...D.calls].sort((a,b)=>((a.date||'')+(a.time||'')).localeCompare((b.date||'')+(b.time||''))).map(c=>[c.date,c.time,pName(c.participantId),vName(c.volunteerId),OUTCOMES[c.outcome]||c.outcome,c.duration,c.mood,CONCERNS[c.concernLevel]||'None',c.concernText,c.concernLevel&&c.concernLevel!=='none'?(c.resolved?'yes':'no'):'',c.resolutionNotes,c.notes,c.outcome==='rescheduled'?((c.newDate||'')+' '+(c.newTime||'')).trim():'']);
+  return {text:'\ufeff' + [head, ...rows].map(r=>r.map(csvCell).join(',')).join('\r\n'), n:rows.length};
+}
+function exportCSV(){ const {text,n} = callsCSV(); download(`call-log-${today()}.csv`, text, 'text/csv;charset=utf-8'); toast(`Exported ${n} call records`); }
+function settingsFromForm(){
+  const f = $('#settingsForm'); if(!f) return;
+  const s = D.settings;
+  for(const k of ['orgName','coordinatorName','coordinatorPhone','coordinatorEmail','safeguardingContact','emergencyNote']) s[k] = f.elements[k].value.trim();
+  const lines = [];
+  for(let i=0; f.elements['cl_label_'+i]; i++) lines.push({label:f.elements['cl_label_'+i].value.trim(), number:f.elements['cl_number_'+i].value.trim(), note:f.elements['cl_note_'+i].value.trim()});
+  s.crisisLines = lines;
+}
+document.addEventListener('submit', e=>{
+  if(e.target.id !== 'settingsForm') return;
+  e.preventDefault(); settingsFromForm(); save(); render(); toast('Settings saved');
+});
+document.addEventListener('change', e=>{
+  if(e.target.dataset && e.target.dataset.change === 'log-filter'){ viewState.logFilter = e.target.value; render(); }
+});
+$('#importFile').addEventListener('change', async e=>{
+  const file = e.target.files[0]; e.target.value=''; if(!file) return;
+  try{
+    const obj = JSON.parse(await file.text());
+    if(!obj || !Array.isArray(obj.participants) || !Array.isArray(obj.volunteers)) throw new Error('this does not look like a toolkit backup file.');
+    if(hasData() && !confirm('Importing will REPLACE all data currently on this device with the backup. Continue?')) return;
+    D = normalize(obj); save(); render(); toast(`Backup imported: ${D.participants.length} participants, ${D.calls.length} calls.`);
+  }catch(err){ toast('Could not import: ' + err.message, true); }
+});
+document.addEventListener('click', e=>{
+  const el = e.target.closest('[data-action]'); if(!el) return;
+  const a = el.dataset.action, id = el.dataset.id;
+  switch(a){
+    case 'close-dlg': $('#dlg').close(); break;
+    case 'show-crisis': $('#crisisBody').innerHTML = crisisHTML(); $('#crisisDlg').showModal(); break;
+    case 'close-crisis': $('#crisisDlg').close(); break;
+    case 'goto': location.hash = el.dataset.view; break;
+    case 'dismiss-privacy': D.settings.privacyDismissed = true; save(); render(); break;
+    case 'print': window.print(); break;
+    case 'log-call': callForm(null, null); break;
+    case 'log-slot': callForm(null, slotIndex[el.dataset.key]); break;
+    case 'edit-call': callForm(D.calls.find(c=>c.id===id)); break;
+    case 'del-call': if(confirm('Delete this call record? This cannot be undone.')){ D.calls = D.calls.filter(c=>c.id!==id); D.oneOffs = D.oneOffs.filter(o=>o.fromCallId!==id); save(); render(); } break;
+    case 'add-volunteer': volunteerForm(); break;
+    case 'edit-volunteer': volunteerForm(vol(id)); break;
+    case 'del-volunteer':
+      if(D.pairings.some(p=>p.volunteerId===id)){ toast('This volunteer has pairings. Delete or reassign those first, or set the volunteer to Inactive.', true); break; }
+      if(confirm(`Delete volunteer "${vName(id)}"? Their past call records will be kept but show as "Unknown volunteer".`)){ D.volunteers = D.volunteers.filter(v=>v.id!==id); save(); render(); }
+      break;
+    case 'add-participant': participantForm(); break;
+    case 'edit-participant': participantForm(par(id)); break;
+    case 'del-participant':
+      if(confirm(`Delete "${pName(id)}" and ALL their pairings, call records and loneliness checks? This cannot be undone. (To stop calls but keep records, set their status to Ended instead.)`)){
+        D.participants = D.participants.filter(p=>p.id!==id); D.pairings = D.pairings.filter(p=>p.participantId!==id);
+        D.calls = D.calls.filter(c=>c.participantId!==id); D.oneOffs = D.oneOffs.filter(o=>o.participantId!==id); D.ucla = D.ucla.filter(u=>u.participantId!==id);
+        save(); render(); toast('Participant and their records deleted');
+      } break;
+    case 'add-pairing': pairingForm(); break;
+    case 'edit-pairing': pairingForm(pairing(id)); break;
+    case 'del-pairing': if(confirm('Delete this pairing? Future calls will be removed from the schedule. Past call records are kept.')){ D.pairings = D.pairings.filter(p=>p.id!==id); save(); render(); } break;
+    case 'resolve': {
+      const c = D.calls.find(x=>x.id===id); const ta = document.getElementById('res_'+id); const notes = (ta ? ta.value : '').trim();
+      if(!notes && !confirm('Mark resolved without writing what was done?')) break;
+      c.resolved = true; c.resolvedAt = new Date().toISOString(); c.resolutionNotes = notes; save(); render(); toast('Concern marked resolved'); break; }
+    case 'reopen': { const c = D.calls.find(x=>x.id===id); c.resolved=false; save(); render(); break; }
+    case 'add-ucla': uclaForm(); break;
+    case 'del-ucla': if(confirm('Delete this loneliness check?')){ D.ucla = D.ucla.filter(u=>u.id!==id); save(); render(); } break;
+    case 'add-line': settingsFromForm(); D.settings.crisisLines.push({label:'',number:'',note:''}); render(); break;
+    case 'del-line': settingsFromForm(); D.settings.crisisLines.splice(Number(el.dataset.i),1); render(); break;
+    case 'reset-lines': settingsFromForm(); D.settings.crisisLines = defaultSettings().crisisLines; render(); toast('Reset to examples. Click Save settings to keep.'); break;
+    case 'export-json': exportJSON(); break;
+    case 'import-json': $('#importFile').click(); break;
+    case 'export-csv': exportCSV(); break;
+    case 'sample': if(!hasData() || confirm('Load sample data? This REPLACES all data currently stored on this device.')){ D = sampleData(); save(); location.hash = 'upcoming'; render(); toast('Sample data loaded. All people are made up.'); } break;
+    case 'clear':
+      if(confirm('Clear ALL data on this device: volunteers, participants, pairings, calls, concerns and settings? This cannot be undone. Export a backup first if you need one.') && prompt('Type DELETE to confirm.') === 'DELETE'){
+        try{ localStorage.removeItem(KEY); }catch(err){}
+        D = emptyData(); render(); toast('All data cleared');
+      } break;
+  }
+});
+
+/* ===================== Sample data (all fictional) ===================== */
+function sampleData(){
+  const d = emptyData(); const t = today();
+  let seed = 7; const rnd = () => (seed = (seed*9301+49297)%233280)/233280;
+  Object.assign(d.settings, {orgName:'Sample Street Friendly Calls (demo)', coordinatorName:'Alex Coordinator (sample)', coordinatorPhone:'555-0100', coordinatorEmail:'coordinator@example.org', safeguardingContact:'Sample Council Adult Safeguarding, 555-0199 (fictional)'});
+  const V = (name, phone, extra) => Object.assign({id:uid(), name, phone, email:name.split(' ')[0].toLowerCase()+'@example.org', status:'active', trained:true, trainedDate:addDays(t,-30), checks:'Reference received (sample)', availability:'', notes:''}, extra);
+  const v1 = V('Sam Example (sample)','555-0101',{availability:'Weekday mornings'});
+  const v2 = V('Priya Sample (sample)','555-0102',{availability:'Afternoons, Mon–Thu'});
+  const v3 = V('Tomás Demo (sample)','555-0103',{availability:'Evenings and weekends', trained:false, trainedDate:'', notes:'Booked on next training session'});
+  d.volunteers = [v1,v2,v3];
+  const P = (name, phone, extra) => Object.assign({id:uid(), name, phone, timezone:LOCAL_TZ, language:'English', consent:true, consentDate:addDays(t,-22), startDate:addDays(t,-20), status:'active', emergencyName:'', emergencyPhone:'', preferredTimes:'', notes:''}, extra);
+  const p1 = P('Margaret T. (sample)','555-0111',{preferredTimes:'Mornings after 10', emergencyName:'Daughter, Jo (sample)', emergencyPhone:'555-0121', notes:'Loves gardening and talking about her grandchildren. Hard of hearing: speak slowly.'});
+  const p2 = P('Ade O. (sample)','+44 7700 900111',{preferredTimes:'Late morning UK time', timezone:'Europe/London', language:'English, Yoruba', emergencyName:'Neighbour, Chris (sample)', emergencyPhone:'+44 7700 900122', notes:'Recently moved to be near family. Enjoys football.'});
+  const p3 = P('Rosa M. (sample)','555-0113',{preferredTimes:'Afternoons', language:'Spanish, English', emergencyName:'Son, Luis (sample)', emergencyPhone:'555-0123', notes:'Prefers to chat in Spanish. Former teacher.'});
+  const p4 = P('Kenji D. (sample)','555-0114',{preferredTimes:'Any weekday', emergencyName:'Sister, Aiko (sample)', emergencyPhone:'555-0124', startDate:addDays(t,-6), consentDate:addDays(t,-7), notes:'Carer for his wife. Short calls suit him best.'});
+  const p5 = P('Bill F. (sample)','555-0115',{status:'paused', notes:'Paused while in hospital; family will let us know.'});
+  const p6 = P('June W. (sample)','555-0116',{consent:false, consentDate:'', startDate:'', notes:'Referred by the library. Consent call booked.'});
+  d.participants = [p1,p2,p3,p4,p5,p6];
+  const PR = (v,p,days,time,start) => ({id:uid(), volunteerId:v.id, participantId:p.id, days, interval:'1', time, startDate:start, endDate:addDays(start,55), active:true, notes:''});
+  d.pairings = [
+    PR(v1,p1,[1,4],'10:30',addDays(t,-20)),
+    PR(v1,p2,[2,5],'09:00',addDays(t,-20)),
+    PR(v2,p3,[1,3,5],'14:00',addDays(t,-20)),
+    PR(v2,p4,[2,4],'15:30',addDays(t,-6)),
+    PR(v1,p5,[3],'11:00',addDays(t,-20)),
+  ];
+  const notes = ['Talked about the garden; tomatoes coming in.','Chatted about an old film she loved.','Shared news about a grandchild visiting.','Talked about the football results.','Quiet at first, then laughed about the weather.','Asked about the library book club.','Talked about cooking a family recipe.'];
+  const saved = D; D = d;
+  const past = slotsBetween(addDays(t,-20), addDays(t,-1));
+  D = saved;
+  let i = 0, skipped = false;
+  for(const s of past){
+    i++;
+    if(!skipped && s.date >= addDays(t,-4) && s.participantId===p3.id){ skipped = true; continue; } // leave one overdue
+    const c = {id:uid(), slotKey:s.key, participantId:s.participantId, volunteerId:s.volunteerId, date:s.date, time:s.time, loggedAt:new Date().toISOString(), outcome:'completed', duration:8+Math.floor(rnd()*20), mood:String(3+Math.floor(rnd()*2.6)), notes:notes[i%notes.length], concernLevel:'none', concernText:'', resolved:false};
+    if(i%9===0){ Object.assign(c, {outcome:'no_answer', duration:'', mood:'', notes:'No answer. Will try at the next scheduled time.'}); }
+    d.calls.push(c);
+  }
+  const k = d.calls.filter(c=>c.participantId===p4.id).pop();
+  if(k) Object.assign(k, {outcome:'completed', duration:9, mood:'2', concernLevel:'follow-up', concernText:"Said he is very tired from caring and hasn't been out in two weeks. Asked if there is any carers' support nearby.", notes:"Short call. Talked about his wife's favourite music."});
+  const a = d.calls.filter(c=>c.participantId===p2.id)[1];
+  if(a) Object.assign(a, {outcome:'completed', duration:15, mood:'1', concernLevel:'urgent', concernText:'Had a fall earlier and was in pain, alone at home. (Sample scenario.)', resolved:true, resolvedAt:new Date(Date.now()-86400000*10).toISOString(), resolutionNotes:'Volunteer called emergency services with his agreement; coordinator called neighbour Chris. Ade was checked over and is fine. Follow-up call made next day.'});
+  const m = d.calls.filter(c=>c.participantId===p1.id)[2];
+  if(m) Object.assign(m, {outcome:'rescheduled', duration:'', mood:'', notes:'Doctor appointment. Asked to move the call to the afternoon.', newDate:m.date, newTime:'16:00'});
+  d.ucla = [
+    {id:uid(), participantId:p1.id, phase:'start', date:addDays(t,-20), items:[3,2,3], total:8},
+    {id:uid(), participantId:p2.id, phase:'start', date:addDays(t,-20), items:[2,2,3], total:7},
+    {id:uid(), participantId:p3.id, phase:'start', date:addDays(t,-20), items:[3,3,2], total:8},
+    {id:uid(), participantId:p4.id, phase:'start', date:addDays(t,-6), items:[2,2,2], total:6},
+    {id:uid(), participantId:p1.id, phase:'end', date:addDays(t,-1), items:[2,2,2], total:6},
+    {id:uid(), participantId:p2.id, phase:'end', date:addDays(t,-1), items:[2,1,2], total:5},
+  ];
+  return d;
+}
+
+/* ===================== Init ===================== */
+try{ if(Intl.supportedValuesOf){ $('#tzlist').innerHTML = Intl.supportedValuesOf('timeZone').map(z=>`<option value="${esc(z)}">`).join(''); } }catch(e){}
+try{ localStorage.setItem(KEY+'.test','1'); localStorage.removeItem(KEY+'.test'); }
+catch(e){ setTimeout(()=>toast('This browser is blocking storage, so data will NOT be saved. Try another browser or turn off private mode.', true), 300); }
+render();
+</script>
+</body>
+</html>
